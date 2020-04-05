@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour
 {
-    public GameObject hazard;
+    public GameObject[] hazards;
     public Vector3 spawnValues;
     public int hazardCount;
     public float spawnWait;
@@ -18,6 +18,7 @@ public class GameController : MonoBehaviour
 
     public Text restartText;
     public Text gameoverText;
+    public Text winText;
 
     private bool gameOver;
     private bool restart;
@@ -28,6 +29,7 @@ public class GameController : MonoBehaviour
         restart = false;
         restartText.text = "";
         gameoverText.text = "";
+        winText.text = "";
         score = 0;
         UpdateScore();
         StartCoroutine (SpawnWaves());
@@ -35,13 +37,20 @@ public class GameController : MonoBehaviour
 
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.R))
+        if (restart)
         {
-            SceneManager.LoadScene("SampleScene");
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                SceneManager.LoadScene("SampleScene");
+            }
         }
         if (Input.GetKey("escape"))
         {
             Application.Quit();
+        }
+        if (gameOver)
+        {
+            winText.text = "";
         }
     }
 
@@ -52,6 +61,7 @@ public class GameController : MonoBehaviour
         {
             for (int i = 0; i < hazardCount; i++)
             {
+                GameObject hazard = hazards[Random.Range(0, hazards.Length)];
                 Vector3 spawnPosition = new Vector3(Random.Range(-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
                 Quaternion spawnRotation = Quaternion.identity;
                 Instantiate(hazard, spawnPosition, spawnRotation);
@@ -59,11 +69,12 @@ public class GameController : MonoBehaviour
             }
             yield return new WaitForSeconds(waveWait);
 
-            if(gameOver)
+   
+            if (restart)
             {
-                restartText.text = "Press 'R' for Restart";
-                restart = true;
+                restartText.text = "Press ' T ' for Restart";
                 break;
+
             }
         }
     }
@@ -76,13 +87,20 @@ public class GameController : MonoBehaviour
 
     void UpdateScore()
     {
-        ScoreText.text = "Score: " + score;
+        ScoreText.text = "Points: " + score;
+        if (score >= 100)
+        {
+            winText.text = "You Win! Game Created by Hongxu Li";
+            restart = true;
+        }
     }
 
     public void GameOver()
     {
-        gameoverText.text = "Game Over";
-        gameOver = true;
-    }
+            gameoverText.text = "Game Over! Game Created by Hongxu Li";
+            gameOver = true;
+            restart = true;
 
+    }
+    
 }
