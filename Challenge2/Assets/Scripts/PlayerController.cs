@@ -8,6 +8,12 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D rd2d;
     public float speed;
     public float jumpForce;
+    public Vector2 velocity;
+    private CapsuleCollider2D col;
+    private CircleCollider2D scol;
+    public Vector2 slidev;
+    private bool isRunning;
+    private bool isSpacing;
  
 
     private bool isGrounded;
@@ -26,14 +32,27 @@ public class PlayerController : MonoBehaviour
     public AudioClip musicClipOne;
     public AudioClip musicClipTwo;
     public AudioClip musicClipThree;
+    public AudioSource slide;
+    public AudioSource crow;
+    public AudioSource coin;
     public AudioSource musicSource;
+
+    bool sliding = false;
+    float slideTimer = 0f;
+    public float maxSlideTime;
+
+
 
     // Start is called before the first frame update
     void Start()
     {
         rd2d = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        col = GetComponent<CapsuleCollider2D>();
+        scol = GetComponent<CircleCollider2D>();
+        scol.enabled = false;
         isGrounded = true;
+        isSpacing = true;
         count = 0;
         lives = 3;
         SetCountText();
@@ -66,21 +85,25 @@ public class PlayerController : MonoBehaviour
         if (isGrounded == false)
         {
             anim.SetInteger("State", 2);
+            isRunning = false;
         }
 
         if (isGrounded == true && hozMovement==0)
         {
             anim.SetInteger("State", 0);
+            isRunning = false;
         }
 
         if (isGrounded == true && hozMovement != 0)
         {
             anim.SetInteger("State", 1);
+            isRunning = true;
         }
 
         if (isGrounded == true && hozMovement == 0)
         {
             anim.SetInteger("State", 0);
+            isRunning = false;
         }
 
         if (facingRight == false && hozMovement > 0)
@@ -91,7 +114,47 @@ public class PlayerController : MonoBehaviour
         {
             Flip();
         }
+        if (isGrounded == true && isRunning ==true && Input.GetKeyDown(KeyCode.Space)&&isSpacing==true)
+        {
+            isSpacing = false;
+            slideTimer = 0f;
+            anim.SetBool("isSliding", true);
+            scol.enabled = true;
+            col.enabled = false;
+            sliding = true;
+            if (sliding)
+            {
+                slide.Play();
+            }
+            if (facingRight)
+            { rd2d.velocity = slidev; }
+            else
+            {
+                rd2d.velocity = -slidev;
+            }
 
+        }
+        if(sliding || Input.GetKeyUp(KeyCode.Space))
+        {
+            //GameManager.IsInputEnabled = false;
+            slideTimer += Time.deltaTime;
+            if(slideTimer>maxSlideTime)
+            {
+
+                isSpacing = true;
+                sliding = false;
+                anim.SetBool("isSliding", false);
+                col.enabled = true;
+                scol.enabled = false;
+                isRunning = false;
+            }
+        }
+
+
+    }
+    IEnumerator Delay()
+    {
+        yield return new WaitForSeconds(2);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -101,6 +164,7 @@ public class PlayerController : MonoBehaviour
             other.gameObject.SetActive(false);
             count = count + 1;
             SetCountText();
+            coin.Play();
             if (count == 4)
             {
                 transform.position = new Vector2(55.0f, 62.0f);
@@ -113,6 +177,16 @@ public class PlayerController : MonoBehaviour
             other.gameObject.SetActive(false);
             lives = lives - 1;
             SetLivesText();
+            crow.Play();
+        }
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.collider.tag == "Spring")
+        {
+            rd2d.velocity = Vector2.zero;
+            rd2d.velocity = velocity;
         }
     }
 
@@ -143,7 +217,7 @@ public class PlayerController : MonoBehaviour
         if (lives <= 0)
         {
             winText.text = "You Lose ! Game Created by Hongxu Li !";
-            anim.SetInteger("State", 3);
+            anim.Play("dead");
             Destroy(this);
             musicSource.Stop();
             musicSource.clip = musicClipThree;
